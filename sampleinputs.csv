@@ -1,0 +1,11 @@
+Label  ,Cycle ,x_pos ,y_pos ,z_pos ,payload ,degradation ,cycle_time
+LABEL1 ,    1 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
+LABEL1 ,    2 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
+LABEL1 ,    3 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
+LABEL1 ,    4 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
+LABEL1 ,    5 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
+LABEL2 ,    1 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
+LABEL2 ,    2 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
+LABEL2 ,    3 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
+LABEL2 ,    4 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
+LABEL2 ,    5 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
