@@ -4,6 +4,7 @@ from degradation_env import DegradationEnv
 env = DegradationEnv(has_renderer=True, hard_reset=True)
 
 env.reset()
+env.set_friction("robot0_joint1", 1000)
 
 action = [0.1, 0.0, 1.0, np.pi, 0.0, 0.0, 0.5]
 

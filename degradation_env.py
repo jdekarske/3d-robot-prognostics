@@ -121,7 +121,9 @@ class DegradationEnv(SingleArmEnv):
         super()._load_model()
 
         # Put the robot on the table
-        xpos = self.robots[0].robot_model.base_xpos_offset["table"](self.table_full_size[0])
+        xpos = self.robots[0].robot_model.base_xpos_offset["table"](
+            self.table_full_size[0]
+        )
         self.robots[0].robot_model.set_base_xpos(xpos)
 
         # load model for table top workspace
@@ -158,26 +160,6 @@ class DegradationEnv(SingleArmEnv):
                 reference_pos=self.table_offset,
                 z_offset=0.01,
             )
-
-        # Set joint attributes
-        # TODO design interface to allow us to change damping, friction or other attributes intelligently
-        # TODO Test if this can be changed at any time (this suggests you can't for damping
-        # TODO look at this method to modify the sim directly: https://github.com/ARISE-Initiative/robosuite/blob/874ce964640f66440a695582a1375df1aff247ac/robosuite/utils/mjmod.py#L1913
-        # I think you might be able to modify here: env.mjpy_model.dof_frictionloss
-        # https://mujoco.readthedocs.io/en/latest/computation.html#passive-forces)
-        # Docs: https://mujoco.readthedocs.io/en/latest/computation.html#friction-loss
-        # defaults: https://github.com/ARISE-Initiative/robosuite/blob/874ce964640f66440a695582a1375df1aff247ac/robosuite/models/robots/robot_model.py#L71
-        dof = self.robots[0].robot_model.dof
-        # self.robots[0].robot_model.set_joint_attribute(
-        #     attrib="frictionloss", values=500 * np.ones(dof), force=False
-        # )
-        # TODO other attributes to change... there are many more! yay!
-        self.robots[0].robot_model.set_joint_attribute(
-            attrib="damping", values=20 * np.ones(dof), force=False
-        )
-        # self.robots[0].robot_model.set_joint_attribute(
-        #     attrib="armature", values=np.array([5.0 / (i + 1) for i in range(dof)]), force=False
-        # )
 
         # task includes arena, robot, and objects of interest
         self.model = ManipulationTask(
@@ -217,7 +199,9 @@ class DegradationEnv(SingleArmEnv):
 
         @sensor(modality=modality)
         def cube_quat(obs_cache):
-            return convert_quat(np.array(self.sim.data.body_xquat[self.cube_body_id]), to="xyzw")
+            return convert_quat(
+                np.array(self.sim.data.body_xquat[self.cube_body_id]), to="xyzw"
+            )
 
         sensors = [cube_pos, cube_quat]  # TODO add these: gripper_pos, gripper_quat]
         names = [s.__name__ for s in sensors]
@@ -265,7 +249,22 @@ class DegradationEnv(SingleArmEnv):
 
         # Color the gripper visualization site according to its distance to the cube
         if vis_settings["grippers"]:
-            self._visualize_gripper_to_target(gripper=self.robots[0].gripper, target=self.cube)
+            self._visualize_gripper_to_target(
+                gripper=self.robots[0].gripper, target=self.cube
+            )
+
+    def set_friction(self, joint_name, val):
+        # Available "joint" names = ('robot0_joint1', 'robot0_joint2', 'robot0_joint3', 'robot0_joint4', 'robot0_joint5', 'robot0_joint6', 'robot0_joint7', 'gripper0_finger_joint1', 'gripper0_finger_joint2', 'cube_joint0')
+        jnt_id = self.sim.model.joint_name2id(joint_name)
+        if self.sim.model.jnt_type[jnt_id] != 0:
+            dof_idx = [i for i, v in enumerate(self.sim.model.dof_jntid) if v == jnt_id]
+            self.sim.model.dof_damping[dof_idx] = val
+
+    # Other potential modifiers:
+    # actuator_ctrlrange
+    # actuator_forcelimited
+    # dof_damping
+    # sensor_names (gripper force)
 
     # TODO not used but might be helpful
     # def _check_success(self):
@@ -280,17 +279,17 @@ class DegradationEnv(SingleArmEnv):
     #     # cube is higher than the table top above a margin
     #     return cube_height > table_height + 0.04
 
-    # def step(self, action):
-    #     """
-    #     TODO set the desired trajectory in this class before the movement so you
-    #     can just call ".step" without specifying an action. A trajectory could
-    #     look like [(time1,state1), ..., (4,[0.8, 0, 0.8])]. this method would
-    #     track the current step and apply the actions as necessary. this saves us
-    #     from having to do the `if step > x action = y` kind of thing. feel free
-    #     to find a trajectory generator somewhere
-    #     """
-    #     placeholder_action = action
-    #     super().step(placeholder_action)  # this is a placeholder
+    def step(self, action):
+        """
+        TODO set the desired trajectory in this class before the movement so you
+        can just call ".step" without specifying an action. A trajectory could
+        look like [(time1,state1), ..., (4,[0.8, 0, 0.8])]. this method would
+        track the current step and apply the actions as necessary. this saves us
+        from having to do the `if step > x action = y` kind of thing. feel free
+        to find a trajectory generator somewhere
+        """
+        placeholder_action = action
+        return super().step(placeholder_action)  # this is a placeholder
 
     def set_trajectory(self, pointlist):
         """
@@ -306,7 +305,10 @@ class DegradationEnv(SingleArmEnv):
         - open gripper
         - move down
         - grab
-        -  build a better view and take this out of the args # TODO change this toonvert this to time # TODO check the docs for this... very confusing # TODO check if we can change degradtion withiout thisa hard resetetc
+        -  build a better view and take this out of the args
+        # TODO change this toonvert this to time
+        # TODO check the docs for this... very confusing
+        # TODO check if we can change degradation withiout thisa hard reset etc
         """
         raise NotImplementedError()
 
