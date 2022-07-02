@@ -1,4 +1,5 @@
 import numpy as np
+import h5py
 
 from robosuite.environments.manipulation.single_arm_env import SingleArmEnv
 from robosuite.models.arenas import TableArena
@@ -15,6 +16,8 @@ class DegradationEnv(SingleArmEnv):
     (modified from "lift environment")
 
     Args:
+        logging_dir (str): the directory where output files will be saved.
+
         robot: Default: Panda has_renderer (bool): If true, render the simulation state in
             a viewer instead of headless mode.
 
@@ -57,6 +60,7 @@ class DegradationEnv(SingleArmEnv):
 
     def __init__(
         self,
+        logging_dir=None,
         robot="Panda",
         env_configuration="default",
         # controller_configs=None, # using OSC controller instantiated below
@@ -113,6 +117,12 @@ class DegradationEnv(SingleArmEnv):
             camera_heights=camera_heights,
             camera_widths=camera_widths,
         )
+
+        # TODO enable only observables that we want
+
+        # set up directory for logging and initial lists
+        self.logging_dir = logging_dir
+        self.logging = None
 
     def _load_model(self):
         """
@@ -179,31 +189,32 @@ class DegradationEnv(SingleArmEnv):
         # Additional object references from this env
         self.cube_body_id = self.sim.model.body_name2id(self.cube.root_body)
 
-        # TODO add robot EE here
-
     def _setup_observables(self):
         """
         Sets up observables to be used for this environment. Creates object-based observables if
         enabled Returns:
             OrderedDict: Dictionary mapping observable names to its corresponding Observable object
         """
+        # this holds robot observations already!
         observables = super()._setup_observables()
 
-        # low-level object information
-        modality = "object"
-
         # cube-related observables
-        @sensor(modality=modality)
+        @sensor(modality="object")
         def cube_pos(obs_cache):
             return np.array(self.sim.data.body_xpos[self.cube_body_id])
 
-        @sensor(modality=modality)
+        @sensor(modality="object")
         def cube_quat(obs_cache):
             return convert_quat(
                 np.array(self.sim.data.body_xquat[self.cube_body_id]), to="xyzw"
             )
 
-        sensors = [cube_pos, cube_quat]  # TODO add these: gripper_pos, gripper_quat]
+        @sensor(modality="environment")
+        def current_time(obs_cache):
+            return self.sim.data.time
+
+        # TODO add joint effort (or ctrl)
+        sensors = [cube_pos, cube_quat, current_time]
         names = [s.__name__ for s in sensors]
 
         # Create observables
@@ -288,8 +299,21 @@ class DegradationEnv(SingleArmEnv):
         from having to do the `if step > x action = y` kind of thing. feel free
         to find a trajectory generator somewhere
         """
+        # trajectory tracking here
         placeholder_action = action
-        return super().step(placeholder_action)  # this is a placeholder
+
+        obs, reward, done, info = super().step(placeholder_action)
+
+        obs_conc = np.concatenate(
+            (obs["environment-state"], obs["robot0_proprio-state"], obs["object-state"])
+        )
+        # initialize the logging object if necessary
+        if (self.logging is None) and (self.logging_dir is not None):
+            self.logging = np.empty((self.horizon, obs_conc.size))
+        self.logging[self.timestep - 1][:] = obs_conc
+        if done:
+            self.save_data()
+        return obs, reward, done, info
 
     def set_trajectory(self, pointlist):
         """
@@ -314,3 +338,26 @@ class DegradationEnv(SingleArmEnv):
 
     def reward(self, action):
         return 0  # this is required for some reason
+
+    def run(self):
+        action = [
+            0.1,
+            0.0,
+            1.0,
+            np.pi,
+            0.0,
+            0.0,
+            0.5,
+        ]  # TODO trajectory here, check for trajectory
+        while not self.done:
+            self.step(action)  # take action in the environment
+            if self.has_renderer:
+                env.render()  # render on display
+
+    def save_data(self):
+        if not self.logging_dir:
+            return
+        todofile = "hello"
+        with h5py.File(self.logging_dir + todofile + ".hdf5", "w") as f:
+            f.create_dataset("mydataset", data=self.logging)
+            f.attrs["header"] = list(self.observation_modalities) # TODO make the header all the things instead of the modalities
