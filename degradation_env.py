@@ -291,7 +291,7 @@ class DegradationEnv(SingleArmEnv):
         jnt_id = self.sim.model.joint_name2id(joint_name)
         if self.sim.model.jnt_type[jnt_id] != 0:
             dof_idx = [i for i, v in enumerate(self.sim.model.dof_jntid) if v == jnt_id]
-            self.sim.model.dof_damping[dof_idx] = val
+            self.sim.model.dof_frictionloss[dof_idx] = val
 
     # Other potential modifiers:
     # actuator_ctrlrange
