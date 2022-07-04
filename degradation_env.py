@@ -1,5 +1,6 @@
 import numpy as np
 import h5py
+import os
 
 from robosuite.environments.manipulation.single_arm_env import SingleArmEnv
 from robosuite.models.arenas import TableArena
@@ -120,8 +121,21 @@ class DegradationEnv(SingleArmEnv):
 
         # TODO enable only observables that we want
 
+        self.action = np.zeros(self.action_dim)
+
+        self.action = [
+            0.1,
+            0.0,
+            1.0,
+            np.pi,
+            0.0,
+            0.0,
+            0.5,
+        ]  # TODO
+
         # set up directory for logging and initial lists
-        self.logging_dir = logging_dir
+        self.logging_observables = list(self.active_observables)
+        self.logging_dir = os.path.abspath(logging_dir)
         self.logging = None
 
     def _load_model(self):
@@ -225,6 +239,14 @@ class DegradationEnv(SingleArmEnv):
                 sampling_rate=self.control_freq,
             )
 
+        # I want joint angles....
+        observables["robot0_joint_pos_cos"].set_active(False)
+        observables["robot0_joint_pos_cos"].set_enabled(False)
+        observables["robot0_joint_pos_sin"].set_active(False)
+        observables["robot0_joint_pos_sin"].set_enabled(False)
+        observables["robot0_joint_pos"].set_active(True)
+        observables["robot0_joint_pos"].set_enabled(True)
+
         return observables
 
     def _reset_internal(self):
@@ -305,8 +327,9 @@ class DegradationEnv(SingleArmEnv):
         obs, reward, done, info = super().step(placeholder_action)
 
         obs_conc = np.concatenate(
-            (obs["environment-state"], obs["robot0_proprio-state"], obs["object-state"])
+            [np.atleast_1d(obs[x]) for x in self.logging_observables]
         )
+
         # initialize the logging object if necessary
         if (self.logging is None) and (self.logging_dir is not None):
             self.logging = np.empty((self.horizon, obs_conc.size))
@@ -340,24 +363,21 @@ class DegradationEnv(SingleArmEnv):
         return 0  # this is required for some reason
 
     def run(self):
-        action = [
-            0.1,
-            0.0,
-            1.0,
-            np.pi,
-            0.0,
-            0.0,
-            0.5,
-        ]  # TODO trajectory here, check for trajectory
+        # TODO trajectory here, check for trajectory
         while not self.done:
-            self.step(action)  # take action in the environment
+            self.step(self.action)  # take action in the environment
             if self.has_renderer:
                 env.render()  # render on display
 
     def save_data(self):
         if not self.logging_dir:
             return
-        todofile = "hello"
-        with h5py.File(self.logging_dir + todofile + ".hdf5", "w") as f:
+        todofile = "hello.hdf5"
+        if not os.path.exists(self.logging_dir):
+            os.mkdir(self.logging_dir)
+        with h5py.File(os.path.join(self.logging_dir, todofile), "w") as f:
             f.create_dataset("mydataset", data=self.logging)
-            f.attrs["header"] = list(self.observation_modalities) # TODO make the header all the things instead of the modalities
+            f.attrs["header"] = self.logging_observables
+            f.attrs["header_dim"] = [
+                self.observation_spec()[x].size for x in self.logging_observables
+            ]

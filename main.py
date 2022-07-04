@@ -1,7 +1,7 @@
 import numpy as np
 from degradation_env import DegradationEnv
 
-OUTDIR = "./out"
+OUTDIR = "./out/"
 
 env = DegradationEnv(
     horizon=100, has_renderer=False, hard_reset=True, logging_dir=OUTDIR
