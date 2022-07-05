@@ -160,30 +160,32 @@ class DegradationEnv(SingleArmEnv):
         # Arena always gets set to zero origin
         mujoco_arena.set_origin([0, 0, 0])
 
+        cube_min = [0.020, 0.020, 0.020]
+        cube_max = [0.022, 0.022, 0.022]
+        avg_vol = np.mean([np.prod(cube_min), np.prod(cube_max)])
+
+        self.cube_mass = 0.01
+
         self.cube = BoxObject(
             name="cube",
-            size_min=[0.020, 0.020, 0.020],
-            size_max=[0.022, 0.022, 0.022],
+            size_min=cube_min,
+            size_max=cube_max,
             rgba=[1, 0, 0, 1],
+            density=self.cube_mass / avg_vol,
         )  # TODO make this a "space cube"
 
-        # Create placement initializer
-        # TODO make this sample based on mass according to "task severity"
-        if self.placement_initializer is not None:
-            self.placement_initializer.reset()
-            self.placement_initializer.add_objects(self.cube)
-        else:
-            self.placement_initializer = UniformRandomSampler(
-                name="ObjectSampler",
-                mujoco_objects=self.cube,
-                x_range=[-0.03, 0.03],
-                y_range=[-0.03, 0.03],
-                rotation=None,
-                ensure_object_boundary_in_range=False,
-                ensure_valid_placement=True,
-                reference_pos=self.table_offset,
-                z_offset=0.01,
-            )
+        # TODO consider a mass sampler
+        self.placement_initializer = UniformRandomSampler(
+            name="ObjectSampler",
+            mujoco_objects=self.cube,
+            x_range=[-0.03, 0.03],
+            y_range=[-0.03, 0.03],
+            rotation=None,
+            ensure_object_boundary_in_range=False,
+            ensure_valid_placement=True,
+            reference_pos=self.table_offset,
+            z_offset=0.01,
+        )
 
         # task includes arena, robot, and objects of interest
         self.model = ManipulationTask(
@@ -287,6 +289,7 @@ class DegradationEnv(SingleArmEnv):
             )
 
     def set_friction(self, joint_name, val):
+        # TODO https://robosuite.ai/docs/source/robosuite.utils.html?highlight=density#robosuite.utils.mjmod.DynamicsModder
         # Available "joint" names = ('robot0_joint1', 'robot0_joint2', 'robot0_joint3', 'robot0_joint4', 'robot0_joint5', 'robot0_joint6', 'robot0_joint7', 'gripper0_finger_joint1', 'gripper0_finger_joint2', 'cube_joint0')
         jnt_id = self.sim.model.joint_name2id(joint_name)
         if self.sim.model.jnt_type[jnt_id] != 0:
