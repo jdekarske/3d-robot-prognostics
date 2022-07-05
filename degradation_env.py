@@ -95,6 +95,7 @@ class DegradationEnv(SingleArmEnv):
         # TODO check that this controller works with UR5
         controller_config = load_controller_config(default_controller="OSC_POSE")
         controller_config["control_delta"] = False  # actions in world coordinates
+        controller_config["interpolation"] = "linear"
 
         # settings for table top
         self.table_full_size = (0.8, 0.8, 0.05)
@@ -129,8 +130,7 @@ class DegradationEnv(SingleArmEnv):
         # TODO enable only observables that we want
 
         self.action = np.zeros(self.action_dim)
-
-        self.action = [
+        self.start_action = [
             0.1,
             0.0,
             1.0,
@@ -138,7 +138,8 @@ class DegradationEnv(SingleArmEnv):
             0.0,
             0.0,
             0.5,
-        ]  # TODO
+        ]
+        self.trajectory = [(self.start_action, 1.0)]
 
         # set up directory for logging and initial lists
         self.logging_observables = list(self.active_observables)
@@ -322,19 +323,24 @@ class DegradationEnv(SingleArmEnv):
     #     # cube is higher than the table top above a margin
     #     return cube_height > table_height + 0.04
 
-    def step(self, action):
+    def step(self, action=None, use_trajectory=True):
         """
-        TODO set the desired trajectory in this class before the movement so you
-        can just call ".step" without specifying an action. A trajectory could
-        look like [(time1,state1), ..., (4,[0.8, 0, 0.8])]. this method would
-        track the current step and apply the actions as necessary. this saves us
-        from having to do the `if step > x action = y` kind of thing. feel free
-        to find a trajectory generator somewhere
+        TODO improve linear trajectory generator
         """
-        # trajectory tracking here
-        placeholder_action = action
 
-        obs, reward, done, info = super().step(placeholder_action)
+        # set the trajectory if we want (TODO assume we want to)
+        if self.timestep == 0:
+            self.set_trajectory(self.sim.data.body_xpos[self.cube_body_id])
+
+        # sample the trajectory
+        if use_trajectory:
+            if self.trajectory:
+                if self.cur_time >= self.trajectory[0][1]:
+                    self.action = self.trajectory.pop(0)[0]
+        else:
+            self.action = action
+
+        obs, reward, done, info = super().step(np.array(self.action))
 
         obs_conc = np.concatenate([np.atleast_1d(obs[x]) for x in self.logging_observables])
 
@@ -346,12 +352,37 @@ class DegradationEnv(SingleArmEnv):
             self.save_data()
         return obs, reward, done, info
 
-    def set_trajectory(self, pointlist):
+    def set_trajectory(self, cube_pos):
         """
         TODO Process trajectory here include a check for cube orientation so the gripper can match
         the orientation
         """
-        raise NotImplementedError()
+
+        # manually add some trajectories to pick up the cube
+        # [3.0040462, -0.014455365, 1.6638514,]
+        # for i in range(20):
+        #     self.trajectory.append(
+        #         ([cube_pos[0], self.start_action[1], self.start_action[2], np.pi, 0.0, np.pi*i/20, 0], i)
+        #     )
+
+        self.trajectory.append(
+            ([cube_pos[0], self.start_action[1], self.start_action[2], np.pi, 0.0, 0.0, 0], 3)
+        )
+        self.trajectory.append(
+            ([cube_pos[0], cube_pos[1], self.start_action[2], np.pi, 0.0, 0.0, 0], 16)
+        )
+        self.trajectory.append(
+            ([cube_pos[0] + 0.07, cube_pos[1], cube_pos[2] + 0.05, np.pi, 0.0, 0.0, -0.9], 19)
+        )
+        self.trajectory.append(
+            ([cube_pos[0] + 0.07, cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, -0.9], 22)
+        )
+        self.trajectory.append(
+            ([cube_pos[0] + 0.07, cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, 0.5], 25)
+        )
+        self.trajectory.append(
+            ([cube_pos[0], cube_pos[1], cube_pos[2] + 0.2, np.pi, 0.0, 0.0, 0.5], 28)
+        )
 
     def pick_cube(self):
         """
