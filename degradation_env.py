@@ -139,7 +139,7 @@ class DegradationEnv(SingleArmEnv):
             0.0,
             0.5,
         ]
-        self.trajectory = [(self.start_action, 1.0)]
+        self.trajectory = [(self.start_action, 0.0)]
 
         # set up directory for logging and initial lists
         self.logging_observables = list(self.active_observables)
@@ -366,22 +366,16 @@ class DegradationEnv(SingleArmEnv):
         #     )
 
         self.trajectory.append(
-            ([cube_pos[0], self.start_action[1], self.start_action[2], np.pi, 0.0, 0.0, 0], 3)
+            ([cube_pos[0], cube_pos[1], cube_pos[2] + 0.05, np.pi, 0.0, 0.0, -0.9], 6)
         )
         self.trajectory.append(
-            ([cube_pos[0], cube_pos[1], self.start_action[2], np.pi, 0.0, 0.0, 0], 16)
+            ([cube_pos[0], cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, -0.9], 9)
         )
         self.trajectory.append(
-            ([cube_pos[0] + 0.07, cube_pos[1], cube_pos[2] + 0.05, np.pi, 0.0, 0.0, -0.9], 19)
+            ([cube_pos[0], cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, 0.5], 12)
         )
         self.trajectory.append(
-            ([cube_pos[0] + 0.07, cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, -0.9], 22)
-        )
-        self.trajectory.append(
-            ([cube_pos[0] + 0.07, cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, 0.5], 25)
-        )
-        self.trajectory.append(
-            ([cube_pos[0], cube_pos[1], cube_pos[2] + 0.2, np.pi, 0.0, 0.0, 0.5], 28)
+            ([cube_pos[0], cube_pos[1], cube_pos[2] + 0.2, np.pi, 0.0, 0.0, 0.5], 15)
         )
 
     def pick_cube(self):
