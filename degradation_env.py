@@ -1,6 +1,12 @@
+"""
+For simulating a degrading robot arm by adding friction.
+Author: Jason Dekarske (jdekarske@ucdavis.edu)
+License: MIT
+"""
+
+import os
 import numpy as np
 import h5py
-import os
 
 from robosuite.environments.manipulation.single_arm_env import SingleArmEnv
 from robosuite.models.arenas import TableArena
@@ -97,6 +103,7 @@ class DegradationEnv(SingleArmEnv):
 
         # object placement initializer
         self.placement_initializer = placement_initializer
+        self.cube_body_id = None
 
         super().__init__(
             robots=robot,
@@ -145,9 +152,7 @@ class DegradationEnv(SingleArmEnv):
         super()._load_model()
 
         # Put the robot on the table
-        xpos = self.robots[0].robot_model.base_xpos_offset["table"](
-            self.table_full_size[0]
-        )
+        xpos = self.robots[0].robot_model.base_xpos_offset["table"](self.table_full_size[0])
         self.robots[0].robot_model.set_base_xpos(xpos)
 
         # load model for table top workspace
@@ -221,9 +226,7 @@ class DegradationEnv(SingleArmEnv):
 
         @sensor(modality="object")
         def cube_quat(obs_cache):
-            return convert_quat(
-                np.array(self.sim.data.body_xquat[self.cube_body_id]), to="xyzw"
-            )
+            return convert_quat(np.array(self.sim.data.body_xquat[self.cube_body_id]), to="xyzw")
 
         @sensor(modality="environment")
         def current_time(obs_cache):
@@ -234,10 +237,10 @@ class DegradationEnv(SingleArmEnv):
         names = [s.__name__ for s in sensors]
 
         # Create observables
-        for name, s in zip(names, sensors):
+        for name, _sensor in zip(names, sensors):
             observables[name] = Observable(
                 name=name,
-                sensor=s,
+                sensor=_sensor,
                 sampling_rate=self.control_freq,
             )
 
@@ -257,7 +260,8 @@ class DegradationEnv(SingleArmEnv):
         """
         super()._reset_internal()
 
-        # Reset all object positions using initializer sampler if we're not directly loading from an xml
+        # Reset all object positions using initializer sampler if we're not directly loading from an
+        # xml
         if not self.deterministic_reset:
 
             # Sample from the placement initializer for all objects
@@ -284,13 +288,16 @@ class DegradationEnv(SingleArmEnv):
 
         # Color the gripper visualization site according to its distance to the cube
         if vis_settings["grippers"]:
-            self._visualize_gripper_to_target(
-                gripper=self.robots[0].gripper, target=self.cube
-            )
+            self._visualize_gripper_to_target(gripper=self.robots[0].gripper, target=self.cube)
 
     def set_friction(self, joint_name, val):
-        # TODO https://robosuite.ai/docs/source/robosuite.utils.html?highlight=density#robosuite.utils.mjmod.DynamicsModder
-        # Available "joint" names = ('robot0_joint1', 'robot0_joint2', 'robot0_joint3', 'robot0_joint4', 'robot0_joint5', 'robot0_joint6', 'robot0_joint7', 'gripper0_finger_joint1', 'gripper0_finger_joint2', 'cube_joint0')
+        """
+        TODO
+        https://robosuite.ai/docs/source/robosuite.utils.html?highlight=density#robosuite.utils.mjmod.DynamicsModder
+        Available "joint" names = ('robot0_joint1', 'robot0_joint2', 'robot0_joint3',
+        'robot0_joint4', 'robot0_joint5', 'robot0_joint6', 'robot0_joint7',
+        'gripper0_finger_joint1', 'gripper0_finger_joint2', 'cube_joint0')
+        """
         jnt_id = self.sim.model.joint_name2id(joint_name)
         if self.sim.model.jnt_type[jnt_id] != 0:
             dof_idx = [i for i, v in enumerate(self.sim.model.dof_jntid) if v == jnt_id]
@@ -329,9 +336,7 @@ class DegradationEnv(SingleArmEnv):
 
         obs, reward, done, info = super().step(placeholder_action)
 
-        obs_conc = np.concatenate(
-            [np.atleast_1d(obs[x]) for x in self.logging_observables]
-        )
+        obs_conc = np.concatenate([np.atleast_1d(obs[x]) for x in self.logging_observables])
 
         # initialize the logging object if necessary
         if (self.logging is None) and (self.logging_dir is not None):
@@ -366,21 +371,28 @@ class DegradationEnv(SingleArmEnv):
         return 0  # this is required for some reason
 
     def run(self):
+        """
+        This will go through all the steps that are probably necessary. Note that this is blocking
+        and will take a while
+        """
         # TODO trajectory here, check for trajectory
         while not self.done:
             self.step(self.action)  # take action in the environment
             if self.has_renderer:
-                env.render()  # render on display
+                self.render()  # render on display
 
     def save_data(self):
+        """
+        Output data to a file
+        """
         if not self.logging_dir:
             return
         todofile = "hello.hdf5"
         if not os.path.exists(self.logging_dir):
             os.mkdir(self.logging_dir)
-        with h5py.File(os.path.join(self.logging_dir, todofile), "w") as f:
-            f.create_dataset("mydataset", data=self.logging)
-            f.attrs["header"] = self.logging_observables
-            f.attrs["header_dim"] = [
+        with h5py.File(os.path.join(self.logging_dir, todofile), "w") as _file:
+            _file.create_dataset("mydataset", data=self.logging)
+            _file.attrs["header"] = self.logging_observables
+            _file.attrs["header_dim"] = [
                 self.observation_spec()[x].size for x in self.logging_observables
             ]
