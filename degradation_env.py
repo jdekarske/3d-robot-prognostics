@@ -14,7 +14,7 @@ from robosuite.models.objects import BoxObject
 from robosuite.models.tasks import ManipulationTask
 from robosuite.utils.observables import Observable, sensor
 from robosuite.utils.placement_samplers import UniformRandomSampler
-from robosuite.utils.transform_utils import convert_quat
+from robosuite.utils.transform_utils import convert_quat, mat2euler
 from robosuite.controllers import load_controller_config
 
 
@@ -330,7 +330,8 @@ class DegradationEnv(SingleArmEnv):
 
         # set the trajectory if we want (TODO assume we want to)
         if self.timestep == 0:
-            self.set_trajectory(self.sim.data.body_xpos[self.cube_body_id])
+            cube_ori = mat2euler(self.sim.data.body_xmat[self.cube_body_id].reshape(3, 3))
+            self.set_trajectory(self.sim.data.body_xpos[self.cube_body_id], cube_ori[2])
 
         # sample the trajectory
         if use_trajectory:
@@ -352,30 +353,26 @@ class DegradationEnv(SingleArmEnv):
             self.save_data()
         return obs, reward, done, info
 
-    def set_trajectory(self, cube_pos):
+    def set_trajectory(self, cube_pos, cube_yaw):
         """
         TODO Process trajectory here include a check for cube orientation so the gripper can match
         the orientation
         """
 
         # manually add some trajectories to pick up the cube
-        # [3.0040462, -0.014455365, 1.6638514,]
+        # TODO can't figure out how to change EE yaw
         # for i in range(20):
         #     self.trajectory.append(
-        #         ([cube_pos[0], self.start_action[1], self.start_action[2], np.pi, 0.0, np.pi*i/20, 0], i)
+        #         ([cube_pos[0], self.start_action[1], self.start_action[2], np.pi, -np.pi*i/20,0.0,  0], i+5)
         #     )
 
         self.trajectory.append(
-            ([cube_pos[0], cube_pos[1], cube_pos[2] + 0.05, np.pi, 0.0, 0.0, -0.9], 6)
+            ([cube_pos[0], cube_pos[1], cube_pos[2] + 0.05, np.pi, 0.0, 0.0, -0.9], 2)
         )
+        self.trajectory.append(([cube_pos[0], cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, -0.9], 4))
+        self.trajectory.append(([cube_pos[0], cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, 0.5], 6))
         self.trajectory.append(
-            ([cube_pos[0], cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, -0.9], 9)
-        )
-        self.trajectory.append(
-            ([cube_pos[0], cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, 0.5], 12)
-        )
-        self.trajectory.append(
-            ([cube_pos[0], cube_pos[1], cube_pos[2] + 0.2, np.pi, 0.0, 0.0, 0.5], 15)
+            ([cube_pos[0], cube_pos[1], cube_pos[2] + 0.2, np.pi, 0.0, 0.0, 0.5], 8)
         )
 
     def pick_cube(self):
