@@ -73,19 +73,15 @@ class DegradationEnv(SingleArmEnv):
         # controller_configs=None, # using OSC controller instantiated below
         gripper_types="default",
         initialization_noise=None,  # TODO decide if we want this
-        placement_initializer=None,  # TODO randomly place object position
+        placement_initializer=None,
         has_renderer=False,
-        has_offscreen_renderer=False,  # TODO probably don't need this
-        render_camera=None,  # TODO build a better view and take this out of the args
+        has_offscreen_renderer=False,
         render_collision_mesh=False,
         render_gpu_device_id=-1,
         control_freq=20,
-        horizon=1000,  # TODO convert this to time
-        ignore_done=False,  # TODO check the docs for this... very confusing
+        horizon=1000,
+        ignore_done=False,
         hard_reset=True,  # TODO check if we can change degradtion without a hard reset
-        camera_names="agentview",  # TODO what is this?
-        camera_heights=256,  # TODO decide if this is a good default and remove from args
-        camera_widths=256,  # TODO decide if this is a good default and remove from args
     ):
         # unneccessary check so I don't make a stupid mistake later
         if not isinstance(robot, str):
@@ -116,18 +112,12 @@ class DegradationEnv(SingleArmEnv):
             use_camera_obs=False,
             has_renderer=has_renderer,
             has_offscreen_renderer=has_offscreen_renderer,
-            render_camera=render_camera,
             render_collision_mesh=render_collision_mesh,
             control_freq=control_freq,
             horizon=horizon,
             ignore_done=ignore_done,
             hard_reset=hard_reset,
-            camera_names=camera_names,
-            camera_heights=camera_heights,
-            camera_widths=camera_widths,
         )
-
-        # TODO enable only observables that we want
 
         self.action = np.zeros(self.action_dim)
         self.start_action = [
@@ -233,8 +223,11 @@ class DegradationEnv(SingleArmEnv):
         def current_time(obs_cache):
             return self.sim.data.time
 
-        # TODO add joint effort (or ctrl)
-        sensors = [cube_pos, cube_quat, current_time]
+        @sensor(modality="proprio")
+        def robot0_effort(obs_cache):
+            return self.robots[0].torques
+
+        sensors = [cube_pos, cube_quat, current_time, robot0_effort]
         names = [s.__name__ for s in sensors]
 
         # Create observables
@@ -361,6 +354,7 @@ class DegradationEnv(SingleArmEnv):
 
         # manually add some trajectories to pick up the cube
         # TODO can't figure out how to change EE yaw
+        # I think it has to do with *rot_offset
         # for i in range(20):
         #     self.trajectory.append(
         #         ([cube_pos[0], self.start_action[1], self.start_action[2], np.pi, -np.pi*i/20,0.0,  0], i+5)
@@ -397,7 +391,7 @@ class DegradationEnv(SingleArmEnv):
         This will go through all the steps that are probably necessary. Note that this is blocking
         and will take a while
         """
-        # TODO trajectory here, check for trajectory
+
         while not self.done:
             self.step(self.action)  # take action in the environment
             if self.has_renderer:
