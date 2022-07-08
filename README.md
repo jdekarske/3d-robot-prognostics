@@ -6,7 +6,17 @@ in long horizon deep-space missions.
 
 ## Setup
 
-TODO
+Install [robosuite prerequisites](https://robosuite.ai/docs/installation.html)
+
+```
+sudo apt install curl git libgl1-mesa-dev libgl1-mesa-glx libglew-dev \
+         libosmesa6-dev software-properties-common net-tools unzip vim \
+         virtualenv wget xpra xserver-xorg-dev libglfw3-dev patchelf
+```
+Then,
+```
+pip install -r requirements.txt
+```
 
 ## Habitats Optimized for Missions of Exploration
 
