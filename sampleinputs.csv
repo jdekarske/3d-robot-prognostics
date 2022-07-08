@@ -1,11 +1,11 @@
-Label  ,Cycle ,x_pos ,y_pos ,z_pos ,payload ,degradation ,cycle_time
-LABEL1 ,    1 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
-LABEL1 ,    2 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
-LABEL1 ,    3 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
-LABEL1 ,    4 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
-LABEL1 ,    5 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
-LABEL2 ,    1 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
-LABEL2 ,    2 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
-LABEL2 ,    3 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
-LABEL2 ,    4 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
-LABEL2 ,    5 ,  0.1 ,    0 ,    1 ,      0 ,          0 ,        10
+label,cycle,payload,robot0_joint1,robot0_joint2,robot0_joint3,robot0_joint4,robot0_joint5,robot0_joint6,robot0_joint7,gripper0_finger_joint1,gripper0_finger_joint2
+joint1,1,0.1,100,,,,,,,,
+joint2,2,0.1,,100,,,,,,,
+joint3,3,0.1,,,100,,,,,,
+joint4,4,0.1,,,,100,,,,,
+joint5,5,0.1,,,,,100,,,,
+joint6,1,0.1,,,,,,100,,,
+joint7,2,0.1,,,,,,,100,,
+finger1,3,0.1,,,,,,,,100,
+finger2,4,0.1,,,,,,,,,100
+nodeg,5,0.1,,,,,,,,,

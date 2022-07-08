@@ -1,27 +1,33 @@
+"""
+A sample implementation of the degradation environment.
+"""
+
+import pandas as pd
 from degradation_env import DegradationEnv
 
 # only set in beginning
 CONTROL_FREQ = 20
 CYCLE_TIME = 10
-OUTDIR = "./out/"
-horizon = CONTROL_FREQ * CYCLE_TIME
+HORIZON = CONTROL_FREQ * CYCLE_TIME
 
 env = DegradationEnv(
-    horizon=horizon,
-    has_renderer=True,
-    hard_reset=True,
-    logging_dir=OUTDIR,
-    control_freq=CONTROL_FREQ
+    horizon=HORIZON,
+    has_renderer=False, # set True if you want to see it rendered
+    logging_dir="./out/",
+    logging_file="test.hdf5",  # if none uses date and time
+    control_freq=CONTROL_FREQ,
 )
 
-filename = "somelabel"  # TODO
-cyclenumber = "cycle1"  # TODO
-cube_mass = 1  # kg
-friction = [500, 1000]
-friction_joints = ["robot0_joint2", "robot0_joint1"]
+cycles = pd.read_csv("./sampleinputs.csv", header=0)
+joints = [item for item in cycles.keys() if "joint" in item]
+for _, row in cycles.iterrows():
+    env.label = row["label"]
+    env.cycle = row["cycle"]
+    env.cube_mass = row["payload"]  # kg
 
-env.cube_mass = cube_mass  # must be before the reset
-env.reset()
-# for i, joint in enumerate(friction_joints):
-# env.set_friction(joint, friction[i])
-env.run()
+    frictions = row[joints][~row[joints].isnull()]
+    for joint, val in frictions.items():
+        env.set_friction(joint, val)
+
+    env.reset()
+    env.run()

@@ -3,8 +3,8 @@ For simulating a degrading robot arm by adding friction.
 Author: Jason Dekarske (jdekarske@ucdavis.edu)
 License: MIT
 """
-
 import os
+import datetime
 import numpy as np
 import h5py
 
@@ -68,6 +68,7 @@ class DegradationEnv(SingleArmEnv):
     def __init__(
         self,
         logging_dir=None,
+        logging_file=None,
         robot="Panda",
         env_configuration="default",
         # controller_configs=None, # using OSC controller instantiated below
@@ -134,7 +135,15 @@ class DegradationEnv(SingleArmEnv):
         # set up directory for logging and initial lists
         self.logging_observables = list(self.active_observables)
         self.logging_dir = os.path.abspath(logging_dir)
+        if logging_file is None:
+            self.logging_file = datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".hdf5"
+        else:
+            self.logging_file = logging_file
         self.logging = None
+
+        # more parameters for logging
+        self.label = None
+        self.cycle = None
 
     def _load_model(self):
         """
@@ -168,7 +177,7 @@ class DegradationEnv(SingleArmEnv):
             size_max=cube_max,
             rgba=[1, 0, 0, 1],
             density=self.cube_mass / avg_vol,
-        )  # TODO make this a "space cube"
+        )
 
         # TODO consider a mass sampler
         self.placement_initializer = UniformRandomSampler(
@@ -321,7 +330,6 @@ class DegradationEnv(SingleArmEnv):
         TODO improve linear trajectory generator
         """
 
-        # set the trajectory if we want (TODO assume we want to)
         if self.timestep == 0:
             cube_ori = mat2euler(self.sim.data.body_xmat[self.cube_body_id].reshape(3, 3))
             self.set_trajectory(self.sim.data.body_xpos[self.cube_body_id], cube_ori[2])
@@ -391,11 +399,19 @@ class DegradationEnv(SingleArmEnv):
         This will go through all the steps that are probably necessary. Note that this is blocking
         and will take a while
         """
+        if self.logging_dir is not None:
+            if self.label is None:
+                raise Exception("you must set a label property before running")
+            if self.cycle is None:
+                raise Exception("you must set a cycle property before running")
 
         while not self.done:
             self.step(self.action)  # take action in the environment
             if self.has_renderer:
                 self.render()  # render on display
+
+        self.label = None
+        self.cycle = None
 
     def save_data(self):
         """
@@ -403,11 +419,10 @@ class DegradationEnv(SingleArmEnv):
         """
         if not self.logging_dir:
             return
-        todofile = "hello.hdf5"
         if not os.path.exists(self.logging_dir):
             os.mkdir(self.logging_dir)
-        with h5py.File(os.path.join(self.logging_dir, todofile), "w") as _file:
-            _file.create_dataset("mydataset", data=self.logging)
+        with h5py.File(os.path.join(self.logging_dir, self.logging_file), "a") as _file:
+            _file.create_dataset(self.label, data=self.logging)
             _file.attrs["header"] = self.logging_observables
             _file.attrs["header_dim"] = [
                 self.observation_spec()[x].size for x in self.logging_observables
