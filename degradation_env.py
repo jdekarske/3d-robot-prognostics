@@ -277,22 +277,6 @@ class DegradationEnv(SingleArmEnv):
                     np.concatenate([np.array(obj_pos), np.array(obj_quat)]),
                 )
 
-    def visualize(self, vis_settings):
-        """
-        In addition to super call, visualize gripper site proportional to the distance to the cube.
-        Args:
-            vis_settings (dict): Visualization keywords mapped to T/F, determining whether that
-            specific
-                component should be visualized. Should have "grippers" keyword as well as any other
-                relevant options specified.
-        """
-        # Run superclass method first
-        super().visualize(vis_settings=vis_settings)
-
-        # Color the gripper visualization site according to its distance to the cube
-        if vis_settings["grippers"]:
-            self._visualize_gripper_to_target(gripper=self.robots[0].gripper, target=self.cube)
-
     def set_friction(self, joint_name, val):
         """
         TODO
@@ -311,19 +295,6 @@ class DegradationEnv(SingleArmEnv):
     # actuator_forcelimited
     # dof_damping
     # sensor_names (gripper force)
-
-    # TODO not used but might be helpful
-    # def _check_success(self):
-    #     """
-    #     Check if cube has been lifted.
-    #     Returns:
-    #         bool: True if cube has been lifted
-    #     """
-    #     cube_height = self.sim.data.body_xpos[self.cube_body_id][2]
-    #     table_height = self.model.mujoco_arena.table_offset[2]
-
-    #     # cube is higher than the table top above a margin
-    #     return cube_height > table_height + 0.04
 
     def step(self, action=None, use_trajectory=True):
         """
@@ -376,20 +347,6 @@ class DegradationEnv(SingleArmEnv):
         self.trajectory.append(
             ([cube_pos[0], cube_pos[1], cube_pos[2] + 0.2, np.pi, 0.0, 0.0, 0.5], 8)
         )
-
-    def pick_cube(self):
-        """
-        TODO generate trajectory to pick up the cube
-        - move above the cube
-        - open gripper
-        - move down
-        - grab
-        -  build a better view and take this out of the args
-        # TODO change this toonvert this to time
-        # TODO check the docs for this... very confusing
-        # TODO check if we can change degradation withiout thisa hard reset etc
-        """
-        raise NotImplementedError()
 
     def reward(self, action):
         return 0  # this is required for some reason
