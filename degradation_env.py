@@ -379,6 +379,9 @@ class DegradationEnv(SingleArmEnv):
         if not os.path.exists(self.logging_dir):
             os.mkdir(self.logging_dir)
         with h5py.File(os.path.join(self.logging_dir, self.logging_file), "a") as _file:
+            # If the label exists, append the cycle
+            if self.label in _file.keys():
+                self.label+= str(self.cycle)
             _file.create_dataset(self.label, data=self.logging)
             _file.attrs["header"] = self.logging_observables
             _file.attrs["header_dim"] = [
