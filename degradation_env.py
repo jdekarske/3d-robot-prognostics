@@ -101,6 +101,7 @@ class DegradationEnv(SingleArmEnv):
 
         # object placement initializer
         self.placement_initializer = placement_initializer
+        self.initialization_noise = initialization_noise
         self.cube_body_id = None
 
         super().__init__(
@@ -180,17 +181,28 @@ class DegradationEnv(SingleArmEnv):
         )
 
         # TODO consider a mass sampler
-        self.placement_initializer = UniformRandomSampler(
-            name="ObjectSampler",
-            mujoco_objects=self.cube,
-            x_range=[-0.03, 0.03],
-            y_range=[-0.03, 0.03],
-            rotation=None,
-            ensure_object_boundary_in_range=False,
-            ensure_valid_placement=True,
-            reference_pos=self.table_offset,
-            z_offset=0.01,
-        )
+        if not self.initialization_noise:
+            self.placement_initializer = UniformRandomSampler(
+                name="ObjectSampler",
+                mujoco_objects=self.cube,
+                rotation=None,
+                ensure_object_boundary_in_range=False,
+                ensure_valid_placement=True,
+                reference_pos=self.table_offset,
+                z_offset=0.01,
+            )
+        else:
+            self.placement_initializer = UniformRandomSampler(
+                name="ObjectSampler",
+                mujoco_objects=self.cube,
+                x_range=[-0.03, 0.03],
+                y_range=[-0.03, 0.03],
+                rotation=None,
+                ensure_object_boundary_in_range=False,
+                ensure_valid_placement=True,
+                reference_pos=self.table_offset,
+                z_offset=0.01,
+            )
 
         # task includes arena, robot, and objects of interest
         self.model = ManipulationTask(
