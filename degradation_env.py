@@ -103,6 +103,7 @@ class DegradationEnv(SingleArmEnv):
         self.placement_initializer = placement_initializer
         self.initialization_noise = initialization_noise
         self.cube_body_id = None
+        self.cube_mass = 0.0729
 
         super().__init__(
             robots=robot,
@@ -166,43 +167,40 @@ class DegradationEnv(SingleArmEnv):
         # Arena always gets set to zero origin
         mujoco_arena.set_origin([0, 0, 0])
 
-        cube_min = [0.020, 0.020, 0.020]
-        cube_max = [0.022, 0.022, 0.022]
-        avg_vol = np.mean([np.prod(cube_min), np.prod(cube_max)])
+        cube_dim = [0.030, 0.030, 0.030]
 
-        self.cube_mass = 0.01
+        # TODO consider a mass sampler
+        if not self.initialization_noise:
+            cube_min = cube_dim
+            cube_max = cube_dim
+            placement_range = [0, 0]
+        else:
+            # TODO the initialization noise should actually affect these
+            cube_min = cube_dim - 0.022
+            cube_max = cube_dim + 0.022
+            placement_range = [-0.03, 0.03]
+
+        avg_vol = np.mean([np.prod(cube_min), np.prod(cube_max)]) # m^3
 
         self.cube = BoxObject(
             name="cube",
             size_min=cube_min,
             size_max=cube_max,
             rgba=[1, 0, 0, 1],
-            density=self.cube_mass / avg_vol,
+            density=self.cube_mass / avg_vol, # kg/m^3 2700 kg/m3 for aluminum
         )
 
-        # TODO consider a mass sampler
-        if not self.initialization_noise:
-            self.placement_initializer = UniformRandomSampler(
-                name="ObjectSampler",
-                mujoco_objects=self.cube,
-                rotation=None,
-                ensure_object_boundary_in_range=False,
-                ensure_valid_placement=True,
-                reference_pos=self.table_offset,
-                z_offset=0.01,
-            )
-        else:
-            self.placement_initializer = UniformRandomSampler(
-                name="ObjectSampler",
-                mujoco_objects=self.cube,
-                x_range=[-0.03, 0.03],
-                y_range=[-0.03, 0.03],
-                rotation=None,
-                ensure_object_boundary_in_range=False,
-                ensure_valid_placement=True,
-                reference_pos=self.table_offset,
-                z_offset=0.01,
-            )
+        self.placement_initializer = UniformRandomSampler(
+            name="ObjectSampler",
+            mujoco_objects=self.cube,
+            x_range=placement_range,
+            y_range=placement_range,
+            rotation=0,
+            ensure_object_boundary_in_range=False,
+            ensure_valid_placement=True,
+            reference_pos=self.table_offset,
+            z_offset=0.01,
+        )
 
         # task includes arena, robot, and objects of interest
         self.model = ManipulationTask(
@@ -393,7 +391,7 @@ class DegradationEnv(SingleArmEnv):
         with h5py.File(os.path.join(self.logging_dir, self.logging_file), "a") as _file:
             # If the label exists, append the cycle
             if self.label in _file.keys():
-                self.label+= str(self.cycle)
+                self.label += str(self.cycle)
             _file.create_dataset(self.label, data=self.logging)
             _file.attrs["header"] = self.logging_observables
             _file.attrs["header_dim"] = [
