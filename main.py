@@ -3,6 +3,7 @@ A sample implementation of the degradation environment.
 """
 
 import pandas as pd
+import numpy as np
 from degradation_env import DegradationEnv
 from tqdm import tqdm
 
@@ -13,7 +14,7 @@ HORIZON = CONTROL_FREQ * CYCLE_TIME
 
 env = DegradationEnv(
     horizon=HORIZON,
-    has_renderer=True, # set True if you want to see it rendered
+    has_renderer=False,  # set True if you want to see it rendered
     logging_dir="./out/",
     logging_file="test.hdf5",  # if none uses date and time
     control_freq=CONTROL_FREQ,
@@ -25,6 +26,7 @@ for _, row in tqdm(cycles.iterrows()):
     env.label = row["label"]
     env.cycle = row["cycle"]
     env.cube_mass = row["payload"]  # kg
+    env.final_pos = [-0.1, 0.1, 1.1, np.pi, 0, 0, 0.5]
 
     frictions = row[joints][~row[joints].isnull()]
     for joint, val in frictions.items():
@@ -32,4 +34,3 @@ for _, row in tqdm(cycles.iterrows()):
 
     env.reset()
     env.run()
-    break

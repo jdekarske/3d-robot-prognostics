@@ -104,6 +104,7 @@ class DegradationEnv(SingleArmEnv):
         self.initialization_noise = initialization_noise
         self.cube_body_id = None
         self.cube_mass = 0.0729
+        self.final_pos = None
 
         super().__init__(
             robots=robot,
@@ -180,14 +181,14 @@ class DegradationEnv(SingleArmEnv):
             cube_max = cube_dim + 0.022
             placement_range = [-0.03, 0.03]
 
-        avg_vol = np.mean([np.prod(cube_min), np.prod(cube_max)]) # m^3
+        avg_vol = np.mean([np.prod(cube_min), np.prod(cube_max)])  # m^3
 
         self.cube = BoxObject(
             name="cube",
             size_min=cube_min,
             size_max=cube_max,
             rgba=[1, 0, 0, 1],
-            density=self.cube_mass / avg_vol, # kg/m^3 2700 kg/m3 for aluminum
+            density=self.cube_mass / avg_vol,  # kg/m^3 2700 kg/m3 for aluminum
         )
 
         self.placement_initializer = UniformRandomSampler(
@@ -312,8 +313,10 @@ class DegradationEnv(SingleArmEnv):
         """
 
         if self.timestep == 0:
-            cube_ori = mat2euler(self.sim.data.body_xmat[self.cube_body_id].reshape(3, 3))
-            self.set_trajectory(self.sim.data.body_xpos[self.cube_body_id], cube_ori[2])
+            # cube_ori = mat2euler(self.sim.data.body_xmat[self.cube_body_id].reshape(3, 3))
+            self.set_trajectory(
+                self.sim.data.body_xpos[self.cube_body_id], final_pos=self.final_pos
+            )
 
         # sample the trajectory
         if use_trajectory:
@@ -335,7 +338,7 @@ class DegradationEnv(SingleArmEnv):
             self.save_data()
         return obs, reward, done, info
 
-    def set_trajectory(self, cube_pos, cube_yaw):
+    def set_trajectory(self, cube_pos, final_pos=None):
         """
         TODO Process trajectory here include a check for cube orientation so the gripper can match
         the orientation
@@ -349,14 +352,16 @@ class DegradationEnv(SingleArmEnv):
         #         ([cube_pos[0], self.start_action[1], self.start_action[2], np.pi, -np.pi*i/20,0.0,  0], i+5)
         #     )
 
+        # lift up the cube by 20 cm by default
+        if not final_pos:
+            final_pos = [cube_pos[0], cube_pos[1], cube_pos[2] + 0.2, np.pi, 0.0, 0.0, 0.5]
+
         self.trajectory.append(
             ([cube_pos[0], cube_pos[1], cube_pos[2] + 0.05, np.pi, 0.0, 0.0, -0.9], 2)
         )
         self.trajectory.append(([cube_pos[0], cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, -0.9], 4))
         self.trajectory.append(([cube_pos[0], cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, 0.5], 6))
-        self.trajectory.append(
-            ([cube_pos[0], cube_pos[1], cube_pos[2] + 0.2, np.pi, 0.0, 0.0, 0.5], 8)
-        )
+        self.trajectory.append((final_pos, 8))
 
     def reward(self, action):
         return 0  # this is required for some reason
