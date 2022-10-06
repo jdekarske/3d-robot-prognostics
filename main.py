@@ -28,9 +28,10 @@ for _, row in tqdm(cycles.iterrows()):
     env.cube_mass = row["payload"]  # kg
     env.final_pos = [-0.1, 0.1, 1.1, np.pi, 0, 0, 0.5]
 
+    env.reset() # MUST BE BEFORE MODYFING SIM PARAMS
+   
     frictions = row[joints][~row[joints].isnull()]
     for joint, val in frictions.items():
-        env.set_friction(joint, val)
+        env.set_damping(joint, val)
 
-    env.reset()
     env.run()

@@ -289,6 +289,7 @@ class DegradationEnv(SingleArmEnv):
                 )
 
     def set_friction(self, joint_name, val):
+        raise NotImplementedError("use damping instead")
         """
         TODO
         https://robosuite.ai/docs/source/robosuite.utils.html?highlight=density#robosuite.utils.mjmod.DynamicsModder
@@ -300,6 +301,12 @@ class DegradationEnv(SingleArmEnv):
         if self.sim.model.jnt_type[jnt_id] != 0:
             dof_idx = [i for i, v in enumerate(self.sim.model.dof_jntid) if v == jnt_id]
             self.sim.model.dof_frictionloss[dof_idx] = val
+
+    def set_damping(self, joint_name, val):
+        jnt_id = self.sim.model.joint_name2id(joint_name)
+        if self.sim.model.jnt_type[jnt_id] != 0:
+            dof_idx = [i for i, v in enumerate(self.sim.model.dof_jntid) if v == jnt_id]
+            self.sim.model.dof_damping[dof_idx] = val
 
     # Other potential modifiers:
     # actuator_ctrlrange
