@@ -11,6 +11,15 @@
             "program": "main.py",
             "console": "integratedTerminal",
             "justMyCode": false
-        }
+        },
+        {
+            "name": "Python: profiler",
+            "type": "python",
+            "request": "launch",
+            "module": "cProfile",
+            "args": [
+                "-o", "/tmp/tmp.prof", "main.py"
+            ]
+        },
     ]
 }

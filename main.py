@@ -23,7 +23,7 @@ env = DegradationEnv(
 
 cycles = pd.read_csv("./sampleinputs.csv", header=0)
 joints = [item for item in cycles.keys() if "joint" in item]
-for _, row in tqdm(cycles.iterrows()):
+for _, row in tqdm(cycles.iterrows(), total=len(cycles)):
     env.label = row["label"]
     env.cycle = row["cycle"]
     env.cube_mass = row["payload"]  # kg

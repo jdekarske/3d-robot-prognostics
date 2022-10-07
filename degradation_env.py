@@ -142,6 +142,7 @@ class DegradationEnv(SingleArmEnv):
             self.logging_file = datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".hdf5"
         else:
             self.logging_file = logging_file
+        print("data logged to:", self.logging_file)
         self.logging = None
 
         # more parameters for logging
