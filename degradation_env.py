@@ -274,6 +274,10 @@ class DegradationEnv(SingleArmEnv):
         """
         super()._reset_internal()
 
+        # robot start position at cube
+        # TODO hardcoded
+        self.robots[0].set_robot_joint_positions([0, 0.71, 0, -2.1, 0, 2.82, 0.79])
+
         # Reset all object positions using initializer sampler if we're not directly loading from an
         # xml
         if not self.deterministic_reset:
@@ -333,6 +337,7 @@ class DegradationEnv(SingleArmEnv):
         else:
             self.action = action
 
+        # this takes angle as "axis-angle"
         obs, reward, done, info = super().step(np.array(self.action))
 
         obs_conc = np.concatenate([np.atleast_1d(obs[x]) for x in self.logging_observables])
@@ -361,14 +366,62 @@ class DegradationEnv(SingleArmEnv):
 
         # lift up the cube by 20 cm by default
         if not final_pos:
-            final_pos = [cube_pos[0], cube_pos[1], cube_pos[2] + 0.2, np.pi, 0.0, 0.0, 0.5]
+            final_pos = [
+                cube_pos[0],
+                cube_pos[1],
+                cube_pos[2] + 0.2,
+                np.pi / np.sqrt(2),
+                np.pi / np.sqrt(2),
+                0.0,
+                0,
+            ]
 
+        # get rid of the placeholder position
+        if self.trajectory:
+            self.trajectory.clear()
         self.trajectory.append(
-            ([cube_pos[0], cube_pos[1], cube_pos[2] + 0.05, np.pi, 0.0, 0.0, -0.9], 2)
+            (
+                [
+                    cube_pos[0],
+                    cube_pos[1],
+                    cube_pos[2] + 0.05,
+                    np.pi / np.sqrt(2),
+                    np.pi / np.sqrt(2),
+                    0.0,
+                    -0.9,
+                ],
+                0,
+            )
         )
-        self.trajectory.append(([cube_pos[0], cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, -0.9], 4))
-        self.trajectory.append(([cube_pos[0], cube_pos[1], cube_pos[2], np.pi, 0.0, 0.0, 0.5], 6))
-        self.trajectory.append((final_pos, 8))
+        self.trajectory.append(
+            (
+                [
+                    cube_pos[0],
+                    cube_pos[1],
+                    cube_pos[2],
+                    np.pi / np.sqrt(2),
+                    np.pi / np.sqrt(2),
+                    0.0,
+                    -0.9,
+                ],
+                1,
+            )
+        )
+        self.trajectory.append(
+            (
+                [
+                    cube_pos[0],
+                    cube_pos[1],
+                    cube_pos[2],
+                    np.pi / np.sqrt(2),
+                    np.pi / np.sqrt(2),
+                    0.0,
+                    0.5,
+                ],
+                2,
+            )
+        )
+        self.trajectory.append((final_pos, 3))
 
     def reward(self, action):
         return 0  # this is required for some reason
