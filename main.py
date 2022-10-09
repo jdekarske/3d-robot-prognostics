@@ -59,7 +59,9 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
 
     if not args["output_file"]:
-        args["output_file"] = args["input_file"].split(".")[0] + ".hdf5"
+        args["output_file"] = (
+            args["input_file"].split("/")[-1].split(".")[0] + ".hdf5"
+        )  # TODO use os path
 
     experiment(
         args["input_file"],
