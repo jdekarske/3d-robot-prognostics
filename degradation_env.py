@@ -366,7 +366,7 @@ class DegradationEnv(SingleArmEnv):
         #     )
 
         # lift up the cube by 20 cm by default
-        if not final_pos:
+        if not isinstance(final_pos, np.ndarray):
             final_pos = [
                 cube_pos[0],
                 cube_pos[1],
