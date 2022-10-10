@@ -3,6 +3,8 @@ The loop that processes an inputs csv file
 """
 
 import argparse
+import os
+
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
@@ -50,13 +52,22 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="run the prognostic simulation.")
 
-    parser.add_argument("input_file", metavar="-i", type=str)
+    parser.add_argument("--input_file", metavar="-i", type=str)
     parser.add_argument("--output_file", metavar="-o", type=str)
-    parser.add_argument("--horizon", metavar="-h", type=int, default=HORIZON)
+    parser.add_argument("--cycle_time", metavar="-y", type=int, default=CYCLE_TIME)
     parser.add_argument("--control_freq", metavar="-c", type=int, default=CONTROL_FREQ)
     parser.add_argument("--final_pos", metavar="-p", nargs=3, type=list, default=FINAL_POS)
+    parser.add_argument("--test", action="store_true")
 
     args = vars(parser.parse_args())
+
+    if args["test"]:
+        args["input_file"] = "sampleinputs.csv"
+        args["output_file"] = "test.hdf5"
+        print(os.getcwd())
+        if os.path.exists("out/" + args["output_file"]):
+            print("test file exists, removing...")
+            os.remove("out/" + args["output_file"])
 
     if not args["output_file"]:
         args["output_file"] = (
@@ -66,7 +77,7 @@ if __name__ == "__main__":
     experiment(
         args["input_file"],
         args["output_file"],
-        horizon=args["horizon"],
+        horizon=args["control_freq"] * args["cycle_time"],
         control_freq=args["control_freq"],
         final_pos=args["final_pos"],
     )
