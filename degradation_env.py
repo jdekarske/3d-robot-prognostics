@@ -83,6 +83,7 @@ class DegradationEnv(SingleArmEnv):
         horizon=1000,
         ignore_done=False,
         hard_reset=True,  # TODO check if we can change degradtion without a hard reset
+        compression=None
     ):
         # unneccessary check so I don't make a stupid mistake later
         if not isinstance(robot, str):
@@ -144,8 +145,7 @@ class DegradationEnv(SingleArmEnv):
             self.logging_file = logging_file
         print("data logged to:", self.logging_file)
         self.logging = None
-
-        # more parameters for logging
+        self.compression = compression
         self.label = None
         self.cycle = None
 
@@ -458,7 +458,7 @@ class DegradationEnv(SingleArmEnv):
             # If the label exists, append the cycle
             if self.label in _file.keys():
                 self.label += "_" + str(self.cycle)
-            _file.create_dataset(self.label, data=self.logging)
+            _file.create_dataset(self.label, data=self.logging, compression=self.compression)
             _file.attrs["header"] = self.logging_observables
             _file.attrs["header_dim"] = [
                 self.observation_spec()[x].size for x in self.logging_observables

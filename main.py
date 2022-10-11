@@ -30,6 +30,7 @@ def experiment(
         logging_dir="./out/",
         logging_file=experimentfileout,
         control_freq=control_freq,
+        compression="gzip",
     )
 
     cycles = pd.read_csv(experimentfile, header=0)
