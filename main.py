@@ -12,7 +12,7 @@ from tqdm import tqdm
 from degradation_env import DegradationEnv
 
 # defaults
-CONTROL_FREQ = 1000
+CONTROL_FREQ = 500
 CYCLE_TIME = 5
 HORIZON = CONTROL_FREQ * CYCLE_TIME
 FINAL_POS = [-0.1, 0.1, 1.1]
@@ -27,6 +27,7 @@ def experiment(
 ):
     env = DegradationEnv(
         horizon=horizon,
+        has_renderer=False,
         logging_dir="./out/",
         logging_file=experimentfileout,
         control_freq=control_freq,
